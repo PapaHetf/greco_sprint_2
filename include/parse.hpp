@@ -1,21 +1,70 @@
 #pragma once
 
-#include <expected>
+#include <cstddef>
+#include <cstdint>
 #include <string>
+#include <expected>
 #include <string_view>
 #include <utility>
 #include <vector>
 
 #include "types.hpp"
 
+#include <limits>
+#include <iostream>
+
 namespace stdx::details {
 
-// здесь ваш код
+template <typename T>
+bool numeric_lim(int value) {
+    std::cout << (int)std::numeric_limits<T>::min() << " " << std::numeric_limits<T>::max() << std::endl;
+    std::cout << (std::numeric_limits<T>::min() <= value) << " | "  << (value <= std::numeric_limits<T>::max()) << std::endl;
+    return (std::numeric_limits<T>::min() <= value) &&  (value <= std::numeric_limits<T>::max());
+}
+
+template <typename T>
+concept isNumeric = requires {
+    requires std::same_as<T, int8_t> || std::same_as<T, int16_t> || std::same_as<T, int32_t> || std::same_as<T, int64_t>;
+};
+
+template <typename T>
+concept isString = std::same_as<T, std::string>;
+
+template <isString T>
+std::expected<T, scan_error> parse_value(std::string_view input, std::string_view fmt) {
+    if(fmt == "%s") {
+        auto pos = input.find_last_not_of(' ');
+        auto res = input.substr(0, pos);
+        return std::string(res);
+    }
+    return std::unexpected(scan_error{""});
+}
+
+template <isNumeric T>
+std::expected<T, scan_error> parse_value(std::string_view input, std::string_view fmt) {
+    if(fmt == "%d") {
+        int res = std::stoi(input.data());
+       
+        if(numeric_lim<T>(res)) {
+            return T(res);
+        }
+
+        return std::unexpected(scan_error{""});
+    }
+
+    return std::unexpected(scan_error{""});
+}
 
 // Функция для парсинга значения с учетом спецификатора формата
 template <typename T>
 std::expected<T, scan_error> parse_value_with_format(std::string_view input, std::string_view fmt) {
-    // здесь ваш код
+    return parse_value<T>(input, fmt);
+}
+
+template <typename T>
+std::expected<T, scan_error> parse_value_with_format() {
+    std::cout << std::numeric_limits<T>::min() << " " << std::numeric_limits<T>::max() << std::endl;
+    return std::unexpected(scan_error{""});
 }
 
 // Функция для проверки корректности входных данных и выделения из обеих строк интересующих данных для парсинга
