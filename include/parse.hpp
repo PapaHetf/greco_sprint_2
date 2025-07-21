@@ -49,22 +49,16 @@ std::expected<T, scan_error> parse_value(std::string_view input, std::string_vie
             return T(res);
         }
 
-        return std::unexpected(scan_error{""});
+        return std::unexpected(scan_error{"error"});
     }
 
-    return std::unexpected(scan_error{""});
+    return std::unexpected(scan_error{"error"});
 }
 
 // Функция для парсинга значения с учетом спецификатора формата
 template <typename T>
 std::expected<T, scan_error> parse_value_with_format(std::string_view input, std::string_view fmt) {
     return parse_value<T>(input, fmt);
-}
-
-template <typename T>
-std::expected<T, scan_error> parse_value_with_format() {
-    std::cout << std::numeric_limits<T>::min() << " " << std::numeric_limits<T>::max() << std::endl;
-    return std::unexpected(scan_error{""});
 }
 
 // Функция для проверки корректности входных данных и выделения из обеих строк интересующих данных для парсинга

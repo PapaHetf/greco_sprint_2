@@ -6,7 +6,7 @@
 
 TEST(ScanTest, SimpleTest) {
     {
-        auto result = stdx::scan<int16_t, int8_t, int32_t>("1234 5 1000", "{%d} {%d} {%d}");
+        auto result = stdx::scan<int16_t, int8_t, int8_t>("1234 5 1000", "{%d} {%d} {%d}");
         ASSERT_FALSE(result);
     }
 
