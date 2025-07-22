@@ -15,6 +15,7 @@ scan_impl(const std::vector<std::string_view>& inputs, const std::vector<std::st
     auto parsed_tuple = std::make_tuple(details::parse_value_with_format<Ts>(inputs[Indx], fmts[Indx])...);
 
     std::string scan_error;
+
     std::apply([&](auto const&... tuple_args) 
     {
         (std::invoke([&]() {
@@ -25,10 +26,10 @@ scan_impl(const std::vector<std::string_view>& inputs, const std::vector<std::st
     }, parsed_tuple);
 
     if(!scan_error.empty()) {
-        return std::unexpected(details::scan_error{"Dumb implementation"});
+        return std::unexpected(details::scan_error{scan_error});
     }
 
-    return std::unexpected(details::scan_error{"Dumb implementation"});//std::expected(details::scan_result<Ts...>(std::move(parsed_tuple)));
+    return details::scan_result<Ts...>(std::move(*std::get<Indx>(parsed_tuple))...);
 }
 
 template <typename... Ts>

@@ -17,9 +17,25 @@ namespace stdx::details {
 
 template <typename T>
 bool numeric_lim(int value) {
-    std::cout << (int)std::numeric_limits<T>::min() << " " << std::numeric_limits<T>::max() << std::endl;
+    std::cout << +std::numeric_limits<T>::min() << " " << +std::numeric_limits<T>::max() << std::endl;
     std::cout << (std::numeric_limits<T>::min() <= value) << " | "  << (value <= std::numeric_limits<T>::max()) << std::endl;
-    return (std::numeric_limits<T>::min() <= value) &&  (value <= std::numeric_limits<T>::max());
+    return (std::numeric_limits<T>::min() <= value) && (value <= std::numeric_limits<T>::max());
+}
+
+template <typename T, T epsilon = static_cast<T>(0.00001)>
+bool float_lim(float value) {
+    std::cout << +std::numeric_limits<T>::min() << " " << +std::numeric_limits<T>::max() << std::endl;
+    std::cout << (std::abs(std::numeric_limits<T>::min() - value) > epsilon) << " | "  << (std::abs(std::numeric_limits<T>::max() - value) > epsilon) << std::endl;
+    std::cout << std::abs(std::numeric_limits<T>::min() - value) << " | "  << std::abs(std::numeric_limits<T>::max() - value) << std::endl;
+    return (std::abs(std::numeric_limits<T>::min() - value) > epsilon) && (std::abs(std::numeric_limits<T>::max() - value) > epsilon);
+}
+
+template <typename T, T epsilon = static_cast<T>(0.000000001)>
+bool double_lim(double value) {
+    std::cout << +std::numeric_limits<T>::min() << " " << +std::numeric_limits<T>::max() << std::endl;
+    std::cout << (std::abs(std::numeric_limits<T>::min() - value) > epsilon) << " | "  << (std::abs(std::numeric_limits<T>::max() - value) > epsilon) << std::endl;
+    std::cout << std::abs(std::numeric_limits<T>::min() - value) << " | "  << std::abs(std::numeric_limits<T>::max() - value) << std::endl;
+    return (std::abs(std::numeric_limits<T>::min() - value) > epsilon) && (std::abs(std::numeric_limits<T>::max() - value) > epsilon);
 }
 
 template <typename T>
@@ -28,37 +44,99 @@ concept isNumeric = requires {
 };
 
 template <typename T>
-concept isString = std::same_as<T, std::string>;
+concept isNatural = requires {
+    requires std::same_as<T, uint8_t> || std::same_as<T, uint16_t> || std::same_as<T, uint32_t> || std::same_as<T, uint64_t>;
+};
 
-template <isString T>
-std::expected<T, scan_error> parse_value(std::string_view input, std::string_view fmt) {
-    if(fmt == "%s") {
-        auto pos = input.find_last_not_of(' ');
-        auto res = input.substr(0, pos);
-        return std::string(res);
-    }
-    return std::unexpected(scan_error{""});
-}
+template <typename T>
+concept isFloat =std::same_as<T, float>;
+
+template <typename T>
+concept isDouble = std::same_as<T, double>;
+
+template <typename T>
+concept isString = std::same_as<T, std::string> || std::same_as<T, std::string_view>;
 
 template <isNumeric T>
 std::expected<T, scan_error> parse_value(std::string_view input, std::string_view fmt) {
-    if(fmt == "%d") {
-        int res = std::stoi(input.data());
+    if(fmt == "%d" || fmt == "") {
+        auto res = std::stoi(input.data());
        
         if(numeric_lim<T>(res)) {
             return T(res);
         }
 
-        return std::unexpected(scan_error{"error"});
+        return std::unexpected(scan_error{"value " +  std::to_string(res) + " is overflow for save type"});
     }
 
-    return std::unexpected(scan_error{"error"});
+    return std::unexpected(scan_error{"converison specifiers not support: " + std::string(fmt) + " for type numeric"});
+}
+
+template <isNatural T>
+std::expected<T, scan_error> parse_value(std::string_view input, std::string_view fmt) {
+    if(fmt == "%u" || fmt == "") {
+        auto res = std::stoll(input.data());
+       
+        if(numeric_lim<T>(res)) {
+            return T(res);
+        }
+
+        return std::unexpected(scan_error{"value " +  std::to_string(res) + " is overflow for save type"});
+    }
+
+    return std::unexpected(scan_error{"converison specifiers not support: " + std::string(fmt) + " for type natural numeric"});
+}
+
+template <isFloat T>
+std::expected<T, scan_error> parse_value(std::string_view input, std::string_view fmt) {
+    if(fmt == "%f" || fmt == "") {
+        auto res = std::stof(input.data());
+       
+        if(float_lim<T>(res)) {
+            return T(res);
+        }
+
+        return std::unexpected(scan_error{"value " +  std::to_string(res) + " is overflow for save type"});
+    }
+
+    return std::unexpected(scan_error{"converison specifiers not support: " + std::string(fmt) + " for type float"});
+}
+
+template <isDouble T>
+std::expected<T, scan_error> parse_value(std::string_view input, std::string_view fmt) {
+    if(fmt == "%f" || fmt == "") {
+        auto res = std::stod(input.data());
+       
+        if(double_lim<T>(res)) {
+            return T(res);
+        }
+
+        return std::unexpected(scan_error{"value " +  std::to_string(res) + " is overflow for save type"});
+    }
+
+    return std::unexpected(scan_error{"converison specifiers not support: " + std::string(fmt) + " for type double"});
+}
+
+template <isString T>
+std::expected<T, scan_error> parse_value(std::string_view input, std::string_view fmt) {
+    if(fmt == "%s" || fmt == "") {
+        auto pos = input.find_last_not_of(' ');
+        auto res = input.substr(0, pos + 1);
+        return std::string(res);
+    }
+
+    return std::unexpected(scan_error{"converison specifiers not support: " + std::string(fmt) + " for type std::string or std::string_view"});
 }
 
 // Функция для парсинга значения с учетом спецификатора формата
 template <typename T>
 std::expected<T, scan_error> parse_value_with_format(std::string_view input, std::string_view fmt) {
-    return parse_value<T>(input, fmt);
+    if constexpr (std::is_const_v<T>) {
+        return parse_value<std::remove_cv_t<T>>(input, fmt);
+    }
+    else {
+        return parse_value<T>(input, fmt);
+    }
 }
 
 // Функция для проверки корректности входных данных и выделения из обеих строк интересующих данных для парсинга

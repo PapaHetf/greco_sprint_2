@@ -16,11 +16,11 @@ template <typename... Ts>
 struct scan_result {
     scan_result() = delete;
 
-    scan_result(Ts &&...parameter): result_(std::forward<Ts>(parameter)...) {}
-
-    scan_result(std::tuple<Ts...>&& tuple): result_(std::move(tuple)) {}
+    scan_result(Ts&&...parameter): result_(std::forward<Ts>(parameter)...) {}
     
-    void values();
+    std::tuple<Ts...>& values() {
+        return result_;
+    }
     
     private:
         std::tuple<Ts...> result_;
