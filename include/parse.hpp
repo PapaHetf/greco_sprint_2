@@ -11,30 +11,21 @@
 #include "types.hpp"
 
 #include <limits>
-#include <iostream>
 
 namespace stdx::details {
 
 template <typename T>
 bool numeric_lim(int value) {
-    std::cout << +std::numeric_limits<T>::min() << " " << +std::numeric_limits<T>::max() << std::endl;
-    std::cout << (std::numeric_limits<T>::min() <= value) << " | "  << (value <= std::numeric_limits<T>::max()) << std::endl;
     return (std::numeric_limits<T>::min() <= value) && (value <= std::numeric_limits<T>::max());
 }
 
 template <typename T, T epsilon = static_cast<T>(0.00001)>
 bool float_lim(float value) {
-    std::cout << +std::numeric_limits<T>::min() << " " << +std::numeric_limits<T>::max() << std::endl;
-    std::cout << (std::abs(std::numeric_limits<T>::min() - value) > epsilon) << " | "  << (std::abs(std::numeric_limits<T>::max() - value) > epsilon) << std::endl;
-    std::cout << std::abs(std::numeric_limits<T>::min() - value) << " | "  << std::abs(std::numeric_limits<T>::max() - value) << std::endl;
     return (std::abs(std::numeric_limits<T>::min() - value) > epsilon) && (std::abs(std::numeric_limits<T>::max() - value) > epsilon);
 }
 
 template <typename T, T epsilon = static_cast<T>(0.000000001)>
 bool double_lim(double value) {
-    std::cout << +std::numeric_limits<T>::min() << " " << +std::numeric_limits<T>::max() << std::endl;
-    std::cout << (std::abs(std::numeric_limits<T>::min() - value) > epsilon) << " | "  << (std::abs(std::numeric_limits<T>::max() - value) > epsilon) << std::endl;
-    std::cout << std::abs(std::numeric_limits<T>::min() - value) << " | "  << std::abs(std::numeric_limits<T>::max() - value) << std::endl;
     return (std::abs(std::numeric_limits<T>::min() - value) > epsilon) && (std::abs(std::numeric_limits<T>::max() - value) > epsilon);
 }
 
@@ -122,7 +113,7 @@ std::expected<T, scan_error> parse_value(std::string_view input, std::string_vie
     if(fmt == "%s" || fmt == "") {
         auto pos = input.find_last_not_of(' ');
         auto res = input.substr(0, pos + 1);
-        return std::string(res);
+        return T(res);
     }
 
     return std::unexpected(scan_error{"converison specifiers not support: " + std::string(fmt) + " for type std::string or std::string_view"});

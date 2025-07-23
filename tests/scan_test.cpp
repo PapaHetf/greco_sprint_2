@@ -1,6 +1,7 @@
 #include <cstdint>
 #include <gtest/gtest.h>
 #include <print>
+#include <string_view>
 
 #include "scan.hpp"
 
@@ -130,5 +131,36 @@ TEST(ScanTest, TestFormatString) {
         ASSERT_TRUE(result.has_value());
         ASSERT_EQ(std::get<0>(result->values()), 42);
         ASSERT_TRUE(std::abs(std::get<1>(result->values()) - 3.14) < 0.00001);
+    }
+}
+
+TEST(ScanTest, TestFormatStringView) {
+    {
+        auto result = stdx::scan<std::string_view, float>("I want to sum 42 and 3.14 numbers.", "I want to sum {} and {%f} numbers.");
+        ASSERT_TRUE(result.has_value());
+        ASSERT_EQ(std::get<0>(result->values()), "42");
+        ASSERT_TRUE(std::abs(std::get<1>(result->values()) - 3.14) < 0.00001);
+    }
+        {
+    auto result = stdx::scan<const std::string_view, float>("I want to sum 42 and 3.14 numbers.", "I want to sum {} and {%f} numbers.");
+        ASSERT_TRUE(result.has_value());
+        ASSERT_EQ(std::get<0>(result->values()), "42");
+        ASSERT_TRUE(std::abs(std::get<1>(result->values()) - 3.14) < 0.00001);
+    }
+}
+
+TEST(ScanTest, TestCommon) {
+    {
+        auto result = 
+            stdx::scan<std::string_view, float, int16_t, uint8_t, const std::string, double>
+            ("Temperature: 25.5°C, Humidity: 70%, ID: 255, Status: OK, Voltage: 3.3V", 
+                "{}: {}°C, Humidity: {}%, ID: {}, Status: OK, {}: {%f}V");
+        ASSERT_TRUE(result.has_value());
+        ASSERT_EQ(std::get<0>(result->values()), "Temperature");
+        ASSERT_TRUE(std::abs(std::get<1>(result->values()) - 25.5) < 0.00001);
+        ASSERT_EQ(std::get<2>(result->values()), 70);
+        ASSERT_EQ(std::get<3>(result->values()), 255);
+        ASSERT_EQ(std::get<4>(result->values()), "Voltage");
+        ASSERT_TRUE(std::abs(std::get<5>(result->values()) - 3.3) < 0.000000001);
     }
 }
