@@ -18,7 +18,7 @@ struct scan_result {
 
     scan_result(Ts&&...parameter): result_(std::forward<Ts>(parameter)...) {}
     
-    std::tuple<Ts...>& values() {
+    const std::tuple<Ts...>& values() {
         return result_;
     }
     

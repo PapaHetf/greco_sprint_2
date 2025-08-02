@@ -13,56 +13,51 @@
 #include "types.hpp"
 
 namespace stdx::details {
+    
+template <typename T>
+concept isInt = std::integral<T> || std::floating_point<T>;
 
 template <typename T>
 concept isString = std::is_convertible_v<T, std::string> || std::is_convertible_v<T, std::string_view>;
 
 template <typename T>
-requires std::integral<T> || std::floating_point<T>
 std::expected<T, scan_error> parse_value(std::string_view input, std::string_view fmt) {
-    if(fmt == "%d" || fmt == "%u" || fmt == "%f" ||fmt == "") {
+    if constexpr(isInt<T>) {
         T res;
+        if(fmt == "%d" || fmt == "%u" || fmt == "%f" || fmt == "") {
+            auto [_, ec] = std::from_chars(input.data(), input.data() + input.size(), res);
         
-        auto [_, ec] = std::from_chars(input.data(), input.data() + input.size(), res);
-
-        if(ec == std::errc{}) {
+            if(ec == std::errc{}) {
+                return res;
+            }
+            else if (ec == std::errc::invalid_argument){
+                return std::unexpected(scan_error{"invalid argument"});
+            } 
+            else if (ec == std::errc::result_out_of_range) {
+                return std::unexpected(scan_error{"value is larger than an save type"});
+            }
+        }
+        
+        return std::unexpected(scan_error{"converison specifiers are not support: " + std::string(fmt) + " for type numeric"});
+    }
+    else if(isString<T>) {
+        if(fmt == "%s" || fmt == "") {
+            auto pos = input.find_last_not_of(' ');
+            auto res = input.substr(0, pos + 1);
             return T(res);
         }
-        else if (ec == std::errc::invalid_argument){
-            return std::unexpected(scan_error{"value " +  std::to_string(res) + " is not a number"});
-        } 
-        else if (ec == std::errc::result_out_of_range) {
-            return std::unexpected(scan_error{"value " +  std::to_string(res) + " is larger than an save type"});
-        }
+
+        return std::unexpected(scan_error{"converison specifiers are not support: " + std::string(fmt) + " for type std::string or std::string_view"});
     }
 
-    return std::unexpected(scan_error{"converison specifiers not support: " + std::string(fmt) + " for type numeric"});
+    return std::unexpected(scan_error{"unsupported type"});
 }
-/*
-template <isString T>
-std::expected<T, scan_error> parse_value(std::string_view input, std::string_view fmt) {
-    if(fmt == "%s" || fmt == "") {
-        auto pos = input.find_last_not_of(' ');
-        auto res = input.substr(0, pos + 1);
-        return T(res);
-    }
 
-    return std::unexpected(scan_error{"converison specifiers not support: " + std::string(fmt) + " for type std::string or std::string_view"});
-}*/
-
-// Функция для парсинга значения с учетом спецификатора формата
 template <typename T>
 std::expected<T, scan_error> parse_value_with_format(std::string_view input, std::string_view fmt) {
-    //if constexpr (std::is_const_v<T>) {
-        //return parse_value<std::remove_cv_t<T>>(input, fmt);
-        return parse_value<T>(input, fmt);
-    //}
-    //else {
-        //return parse_value<T>(input, fmt);
-    //}
+    return parse_value<std::remove_cv_t<T>>(input, fmt);
 }
 
-// Функция для проверки корректности входных данных и выделения из обеих строк интересующих данных для парсинга
 template <typename... Ts>
 std::expected<std::pair<std::vector<std::string_view>, std::vector<std::string_view>>, scan_error>
 parse_sources(std::string_view input, std::string_view format) {

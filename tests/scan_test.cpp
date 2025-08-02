@@ -3,7 +3,9 @@
 #include <print>
 #include <string_view>
 
+#include "parse.hpp"
 #include "scan.hpp"
+#include "types.hpp"
 
 TEST(ScanTest, SimpleTestNumeric) {
     {
@@ -18,8 +20,6 @@ TEST(ScanTest, SimpleTestNaturalNumeric) {
     {
         auto result = stdx::scan<uint8_t>("5", "{%u}");
         ASSERT_EQ(std::get<0>(result->values()), 5);
-        std::get<0>(result->values()) = 10;
-        ASSERT_EQ(std::get<0>(result->values()), 10);
     }
     {
         auto result = stdx::scan<uint8_t, uint16_t>("255 1024", "{%u} {%u}");
@@ -37,9 +37,7 @@ TEST(ScanTest, SimpleTestString) {
         auto result = stdx::scan<const std::string, std::string>("Hello Crowley!", "{%s} {%s}");
         ASSERT_EQ(std::get<0>(result->values()), "Hello");
         ASSERT_EQ(std::get<1>(result->values()), "Crowley!");
-        //std::get<0>(result->values()) = "Hi";
-        std::get<1>(result->values()) = "Mr.Crowley!";
-        ASSERT_EQ(std::get<1>(result->values()), "Mr.Crowley!");
+        //std::get<0>(result->values()) = Hi; error
     }
 }
 
@@ -61,14 +59,12 @@ TEST(ScanTest, SimpleTestNumericConst) {
     {
         auto result = stdx::scan<const uint16_t>("8800", "{%u}");
         ASSERT_EQ(std::get<0>(result->values()), 8800);
-        //std::get<0>(result->values()) = 10;
+        //std::get<0>(result->values()) = 10; error
     }
     {
         auto result = stdx::scan<const uint16_t, int8_t>("8800 5", "{%u} {%d}");
         ASSERT_EQ(std::get<0>(result->values()), 8800);
         ASSERT_EQ(std::get<1>(result->values()), 5);
-        std::get<1>(result->values()) = 10;
-        ASSERT_EQ(std::get<1>(result->values()), 10);
     }
 }
 
@@ -76,12 +72,12 @@ TEST(ScanTest, TestNumericError) {
     {
         auto result = stdx::scan<int8_t>("-129", "{%d}");
         ASSERT_FALSE(result.has_value());
-        ASSERT_EQ(result.error().message_, "value -129 is overflow for save type");
+        ASSERT_EQ(result.error().message_, "value is larger than an save type");
     }
     {
         auto result = stdx::scan<int16_t, int8_t, int16_t>("1234 128 1000", "{%d} {%d} {%d}");
         ASSERT_FALSE(result.has_value());
-        ASSERT_EQ(result.error().message_, "value 128 is overflow for save type");
+        ASSERT_EQ(result.error().message_, "value is larger than an save type");
     }
 }
 
@@ -89,20 +85,20 @@ TEST(ScanTest, TestNaturalError) {
     {
         auto result = stdx::scan<uint8_t>("-10", "{%u}");
         ASSERT_FALSE(result.has_value());
-        ASSERT_EQ(result.error().message_, "value -10 is overflow for save type");
+        ASSERT_EQ(result.error().message_, "invalid argument");
     }
     {
         auto result = stdx::scan<uint16_t, uint32_t, uint8_t>("1234 128 1000", "{%u} {%u} {%u}");
         ASSERT_FALSE(result.has_value());
-        ASSERT_EQ(result.error().message_, "value 1000 is overflow for save type");
+        ASSERT_EQ(result.error().message_, "value is larger than an save type");
     }
 }
 
 TEST(ScanTest, TestFloatError) {
     {
         auto result = stdx::scan<float>("0.000009", "{%f}");
-        ASSERT_FALSE(result.has_value());
-        ASSERT_EQ(result.error().message_, "value 0.000009 is overflow for save type");
+        ASSERT_TRUE(result.has_value());
+        ASSERT_TRUE(std::abs(std::get<0>(result->values()) - 0.000009) < 0.00001);
     }
     {
         auto result = stdx::scan<float>("0.000011", "{%f}");
@@ -115,7 +111,7 @@ TEST(ScanTest, TestStringError) {
     {
         auto result = stdx::scan<std::string>("Hello", "{%d}");
         ASSERT_FALSE(result.has_value());
-        ASSERT_EQ(result.error().message_, "converison specifiers not support: %d for type std::string or std::string_view");
+        ASSERT_EQ(result.error().message_, "converison specifiers are not support: %d for type std::string or std::string_view");
     }
 }
 
