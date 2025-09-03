@@ -1,6 +1,7 @@
 # Base image
 # Date: 2025-01-27
-FROM ubuntu@sha256:3afff29dffbc200d202546dc6c4f614edc3b109691e7ab4aa23d02b42ba86790
+# FROM ubuntu@sha256:3afff29dffbc200d202546dc6c4f614edc3b109691e7ab4aa23d02b42ba86790
+FROM ubuntu@sha256:dbdff34bb41cecdb07c79af373b44bb4c9ccba2520f014221fb95845f14bc6c1
 
 # Update the package database and install required tools
 RUN apt-get update

@@ -20,4 +20,6 @@ target_link_libraries(${test_target} PRIVATE ${target} GTest::GTest GTest::Main)
 
 # Включаем тестирование
 enable_testing()
+set(CMAKE_BUILD_TYPE Debug)
+add_compile_options(-g -O0)
 add_test(NAME ${test_target} COMMAND ${PROJECT_NAME}_tests)
